@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cabalspy"
+version = "0.1.0"
+description = "KOL and smart money wallet tracking API for Solana, Base, BNB Chain, Ethereum and Robinhood Chain. Realtime KOL trades, whale wallets, copy-trading signals, bundle detection, token holders and PnL over REST and WebSocket."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "CabalSpy", email = "contact@cabalspy.xyz" }]
+keywords = [
+  "cabalspy", "kol", "kol-api", "kol-tracker", "kol-wallets", "key-opinion-leader",
+  "smart-money", "whale-tracker", "wallet-tracker", "copy-trading", "trading-signals",
+  "onchain-data", "onchain-analytics", "pnl", "token-api", "data-api",
+  "memecoin", "pumpfun", "dex", "bundle-detection", "websocket", "realtime",
+  "solana", "base", "bnb", "bsc", "ethereum", "robinhood-chain", "sdk",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Financial and Insurance Industry",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Office/Business :: Financial",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
+]
+dependencies = ["httpx>=0.24"]
+
+[project.optional-dependencies]
+realtime = ["websockets>=12.0"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "mypy>=1.8", "websockets>=12.0"]
+
+[project.urls]
+Homepage = "https://docs.cabalspy.xyz"
+Documentation = "https://docs.cabalspy.xyz"
+Repository = "https://github.com/YOUR_ORG/cabalspy-python"
+Issues = "https://github.com/YOUR_ORG/cabalspy-python/issues"
+Dashboard = "https://apidashboard.cabalspy.xyz/"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cabalspy"]
+
+[tool.hatch.build]
+include = ["cabalspy/**", "README.md", "LICENSE"]
