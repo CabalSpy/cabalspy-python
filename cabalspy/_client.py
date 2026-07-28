@@ -41,7 +41,7 @@ __all__ = ["CabalSpy", "AsyncCabalSpy", "Envelope"]
 
 DEFAULT_BASE_URL = "https://api.cabalspy.xyz/v1"
 DEFAULT_WS_URL = "wss://stream.cabalspy.xyz"
-SDK_VERSION = "0.1.0"
+SDK_VERSION = "0.2.0"
 
 
 class Envelope:
@@ -531,14 +531,19 @@ class _BaseClient:
         timeout: float = 30.0,
         max_retries: int = 2,
         headers: Mapping[str, str] | None = None,
+        pays_per_call: bool = False,
     ) -> None:
         key = api_key or os.environ.get("CABALSPY_API_KEY")
-        if not key:
+        if not key and not pays_per_call:
             raise CabalSpyError(
-                "Missing API key. Pass api_key= or set CABALSPY_API_KEY in the environment.",
+                "Missing credentials. Pass api_key=, set CABALSPY_API_KEY, or hand in an "
+                "http_client that pays per call with x402.",
                 code="missing_api_key",
             )
-        self._api_key = key
+        self._api_key = key or ""
+
+        #: True when requests are paid per call rather than authenticated by key.
+        self.pays_per_call = bool(pays_per_call and not key)
         self.base_url = (base_url or os.environ.get("CABALSPY_BASE_URL") or DEFAULT_BASE_URL).rstrip("/")
         self.ws_url = (ws_url or os.environ.get("CABALSPY_WS_URL") or DEFAULT_WS_URL).rstrip("/")
         self.timeout = timeout
@@ -559,10 +564,13 @@ class _BaseClient:
 
     def _request_headers(self, json_body: bool) -> dict[str, str]:
         headers = {
-            "Authorization": f"Bearer {self._api_key}",
             "Accept": "application/json",
             "User-Agent": f"cabalspy-python/{SDK_VERSION}",
         }
+        # Omitted when paying per call: an empty bearer token is rejected before
+        # the server ever offers a price, so the payment flow never starts.
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
         if json_body:
             headers["Content-Type"] = "application/json"
         headers.update(self._extra_headers)
@@ -643,6 +651,9 @@ class CabalSpy(_BaseClient):
 
     def __init__(self, api_key: str | None = None, **kwargs: Any) -> None:
         http_client = kwargs.pop("http_client", None)
+        # A caller-supplied client may be one that pays for 402 responses, which
+        # is what makes an API key optional.
+        kwargs.setdefault("pays_per_call", http_client is not None)
         super().__init__(api_key, **kwargs)
         self._http = http_client or httpx.Client(timeout=self.timeout)
         self._owns_http = http_client is None
@@ -751,6 +762,9 @@ class AsyncCabalSpy(_BaseClient):
 
     def __init__(self, api_key: str | None = None, **kwargs: Any) -> None:
         http_client = kwargs.pop("http_client", None)
+        # A caller-supplied client may be one that pays for 402 responses, which
+        # is what makes an API key optional.
+        kwargs.setdefault("pays_per_call", http_client is not None)
         super().__init__(api_key, **kwargs)
         self._http = http_client or httpx.AsyncClient(timeout=self.timeout)
         self._owns_http = http_client is None
