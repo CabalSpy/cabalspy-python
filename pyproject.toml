@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cabalspy"
-version = "0.1.0"
+version = "0.2.0"
 description = "KOL and smart money wallet tracking API for Solana, Base, BNB Chain, Ethereum and Robinhood Chain. Realtime KOL trades, whale wallets, copy-trading signals, bundle detection, token holders and PnL over REST and WebSocket."
 readme = "README.md"
 license = "MIT"
@@ -16,6 +16,7 @@ keywords = [
   "onchain-data", "onchain-analytics", "pnl", "token-api", "data-api",
   "memecoin", "pumpfun", "dex", "bundle-detection", "websocket", "realtime",
   "solana", "base", "bnb", "bsc", "ethereum", "robinhood-chain", "sdk",
+  "x402", "pay-per-call", "agent-payments",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -35,13 +36,14 @@ dependencies = ["httpx>=0.24"]
 
 [project.optional-dependencies]
 realtime = ["websockets>=12.0"]
+x402 = ["x402>=2.17"]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "mypy>=1.8", "websockets>=12.0"]
 
 [project.urls]
 Homepage = "https://docs.cabalspy.xyz"
 Documentation = "https://docs.cabalspy.xyz"
-Repository = "https://github.com/YOUR_ORG/cabalspy-python"
-Issues = "https://github.com/YOUR_ORG/cabalspy-python/issues"
+Repository = "https://github.com/CabalSpy/cabalspy-python"
+Issues = "https://github.com/CabalSpy/cabalspy-python/issues"
 Dashboard = "https://apidashboard.cabalspy.xyz/"
 
 [tool.hatch.build.targets.wheel]
