@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cabalspy"
-version = "0.2.0"
+version = "0.2.1"
 description = "KOL and smart money wallet tracking API for Solana, Base, BNB Chain, Ethereum and Robinhood Chain. Realtime KOL trades, whale wallets, copy-trading signals, bundle detection, token holders and PnL over REST and WebSocket."
 readme = "README.md"
 license = "MIT"
@@ -40,7 +40,7 @@ x402 = ["x402>=2.17"]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "mypy>=1.8", "websockets>=12.0"]
 
 [project.urls]
-Homepage = "https://docs.cabalspy.xyz"
+Homepage = "https://www.cabalspy.xyz/sdks/"
 Documentation = "https://docs.cabalspy.xyz"
 Repository = "https://github.com/CabalSpy/cabalspy-python"
 Issues = "https://github.com/CabalSpy/cabalspy-python/issues"

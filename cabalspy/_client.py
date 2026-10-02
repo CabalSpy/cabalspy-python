@@ -41,7 +41,7 @@ __all__ = ["CabalSpy", "AsyncCabalSpy", "Envelope"]
 
 DEFAULT_BASE_URL = "https://api.cabalspy.xyz/v1"
 DEFAULT_WS_URL = "wss://stream.cabalspy.xyz"
-SDK_VERSION = "0.2.0"
+SDK_VERSION = "0.2.1"
 
 
 class Envelope:
