@@ -37,17 +37,25 @@ from ._errors import (
     is_retryable,
 )
 
-__all__ = ["CabalSpy", "AsyncCabalSpy", "Envelope"]
+__all__ = ["CabalSpy", "AsyncCabalSpy", "Envelope", "DEMO_API_KEY"]
 
 DEFAULT_BASE_URL = "https://api.cabalspy.xyz/v1"
 DEFAULT_WS_URL = "wss://stream.cabalspy.xyz"
-SDK_VERSION = "0.2.1"
+SDK_VERSION = "0.3.0"
+
+#: Public demo key. 20 requests per IP per UTC day, data 15 minutes delayed and
+#: at most 5 rows per list. Use :meth:`CabalSpy.demo` rather than passing it by hand.
+DEMO_API_KEY = "demo"
 
 
 class Envelope:
-    """A full API response: data plus pagination, meta and rate limit headers."""
+    """A full API response: data plus pagination, meta and rate limit headers.
 
-    __slots__ = ("data", "pagination", "meta", "rate_limit", "status")
+    ``demo`` holds the top-level ``demo`` object the server adds to every response
+    made with the demo key (notice, remaining_today, upgrade), and is None otherwise.
+    """
+
+    __slots__ = ("data", "pagination", "meta", "rate_limit", "status", "demo")
 
     def __init__(
         self,
@@ -56,12 +64,14 @@ class Envelope:
         meta: dict[str, Any],
         rate_limit: RateLimit,
         status: int,
+        demo: dict[str, Any] | None = None,
     ) -> None:
         self.data = data
         self.pagination = pagination
         self.meta = meta
         self.rate_limit = rate_limit
         self.status = status
+        self.demo = demo
 
     def __repr__(self) -> str:
         keys = list(self.data)[:5] if isinstance(self.data, dict) else type(self.data).__name__
@@ -537,7 +547,8 @@ class _BaseClient:
         if not key and not pays_per_call:
             raise CabalSpyError(
                 "Missing credentials. Pass api_key=, set CABALSPY_API_KEY, or hand in an "
-                "http_client that pays per call with x402.",
+                "http_client that pays per call with x402. To try the API without signing "
+                "up use CabalSpy.demo(); a free test key is at https://apidashboard.cabalspy.xyz/",
                 code="missing_api_key",
             )
         self._api_key = key or ""
@@ -551,6 +562,8 @@ class _BaseClient:
         self._extra_headers = dict(headers or {})
         #: Rate limit state from the most recent request.
         self.last_rate_limit = RateLimit()
+        #: The ``demo`` object from the most recent response, None unless using the demo key.
+        self.last_demo: dict[str, Any] | None = None
 
         self.system = SystemResource(self)
         self.wallets = WalletsResource(self)
@@ -559,6 +572,11 @@ class _BaseClient:
         self.signals = SignalsResource(self)
         self.analytics = AnalyticsResource(self)
         self.bundle = BundleResource(self)
+
+    @property
+    def is_demo(self) -> bool:
+        """True when this client authenticates with the public demo key."""
+        return self._api_key == DEMO_API_KEY
 
     # ── plumbing shared by both clients ──────────────────────────────────
 
@@ -592,12 +610,15 @@ class _BaseClient:
 
         if response.status_code >= 400:
             body = parsed.get("error") if isinstance(parsed, dict) else None
+            # demo_limit_reached carries its upgrade links next to error, not inside it.
+            upgrade = parsed.get("upgrade") if isinstance(parsed, dict) else None
             raise error_from_status(
                 response.status_code,
                 body if isinstance(body, dict) else None,
                 rate_limit,
                 _int_header(response.headers, "Retry-After"),
                 f"HTTP {response.status_code} on {method} {path}",
+                upgrade=upgrade if isinstance(upgrade, dict) else None,
             )
 
         if not isinstance(parsed, dict) or "data" not in parsed:
@@ -608,12 +629,15 @@ class _BaseClient:
                 rate_limit=rate_limit,
             )
 
+        demo = parsed.get("demo")
+        self.last_demo = demo if isinstance(demo, dict) else None
         return Envelope(
             parsed["data"],
             parsed.get("pagination"),
             parsed.get("meta") or {},
             rate_limit,
             response.status_code,
+            self.last_demo,
         )
 
     def _connection_error(self, exc: Exception, method: str, path: str) -> APIConnectionError:
@@ -657,6 +681,17 @@ class CabalSpy(_BaseClient):
         super().__init__(api_key, **kwargs)
         self._http = http_client or httpx.Client(timeout=self.timeout)
         self._owns_http = http_client is None
+
+    @classmethod
+    def demo(cls, **options: Any) -> "CabalSpy":
+        """A client on the public demo key, no sign up needed.
+
+        20 requests per IP per UTC day shared with the websocket, data 15 minutes
+        delayed, at most 5 rows per list. Takes the same options as the constructor.
+        A spent budget raises :class:`DemoLimitError`.
+        """
+        options.pop("api_key", None)
+        return cls(DEMO_API_KEY, **options)
 
     def __enter__(self) -> "CabalSpy":
         return self
@@ -768,6 +803,12 @@ class AsyncCabalSpy(_BaseClient):
         super().__init__(api_key, **kwargs)
         self._http = http_client or httpx.AsyncClient(timeout=self.timeout)
         self._owns_http = http_client is None
+
+    @classmethod
+    def demo(cls, **options: Any) -> "AsyncCabalSpy":
+        """Async version of :meth:`CabalSpy.demo`."""
+        options.pop("api_key", None)
+        return cls(DEMO_API_KEY, **options)
 
     async def __aenter__(self) -> "AsyncCabalSpy":
         return self

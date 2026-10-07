@@ -6,6 +6,7 @@ Ethereum and Robinhood Chain.
     from cabalspy import CabalSpy
 
     client = CabalSpy()                                  # reads CABALSPY_API_KEY
+    client = CabalSpy.demo()                             # or try it without a key
     board = client.wallets.leaderboard(blockchain="solana", period="7d", limit=25)
 
 Async and realtime:
@@ -20,7 +21,7 @@ Async and realtime:
 Docs: https://docs.cabalspy.xyz
 """
 
-from ._client import AsyncCabalSpy, CabalSpy, Envelope
+from ._client import DEMO_API_KEY, AsyncCabalSpy, CabalSpy, Envelope
 from ._constants import (
     ANALYTICS_MODES,
     BATCH_MAX_ADDRESSES,
@@ -48,6 +49,7 @@ from ._errors import (
     AuthenticationError,
     BadRequestError,
     CabalSpyError,
+    DemoLimitError,
     InsufficientCreditsError,
     InvalidResponseError,
     NotFoundError,
@@ -70,6 +72,8 @@ from ._types import (
     BundleWallet,
     ClusterSignal,
     CountResponse,
+    DemoInfo,
+    DemoUpgrade,
     FeedTransaction,
     HealthResponse,
     HoldingsAfter,
@@ -92,7 +96,7 @@ from ._types import (
     WinRateDistribution,
 )
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 __all__ = [
     "__version__",
@@ -109,11 +113,13 @@ __all__ = [
     "InsufficientCreditsError",
     "NotFoundError",
     "RateLimitError",
+    "DemoLimitError",
     "ServerError",
     "APIConnectionError",
     "InvalidResponseError",
     "RateLimit",
     # constants and helpers
+    "DEMO_API_KEY",
     "CHAINS",
     "WALLET_TYPES_BY_CHAIN",
     "CURRENCY_BY_CHAIN",
@@ -141,6 +147,8 @@ __all__ = [
     # response types
     "ResponseMeta",
     "Pagination",
+    "DemoInfo",
+    "DemoUpgrade",
     "WalletProfile",
     "TokenBlock",
     "HoldingsAfter",

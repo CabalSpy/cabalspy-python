@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cabalspy"
-version = "0.2.1"
+version = "0.3.0"
 description = "KOL and smart money wallet tracking API for Solana, Base, BNB Chain, Ethereum and Robinhood Chain. Realtime KOL trades, whale wallets, copy-trading signals, bundle detection, token holders and PnL over REST and WebSocket."
 readme = "README.md"
 license = "MIT"

@@ -40,6 +40,23 @@ class Pagination(TypedDict):
     next_cursor: str | None
 
 
+class DemoUpgrade(TypedDict, total=False):
+    test_key: str
+    pay_per_call: str
+    docs: str
+
+
+class DemoInfo(TypedDict, total=False):
+    """Top-level ``demo`` object on responses made with the demo key.
+
+    Available as ``Envelope.demo`` and ``client.last_demo``.
+    """
+
+    notice: str
+    remaining_today: int
+    upgrade: DemoUpgrade
+
+
 # ── shared ───────────────────────────────────────────────────────────────────
 
 

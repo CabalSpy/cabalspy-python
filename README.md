@@ -16,6 +16,30 @@ pip install "cabalspy[realtime]"
 
 **What you can build with it:** copy-trading bots, KOL leaderboards, memecoin alert systems, wallet analytics dashboards, bundle and sniper detection, portfolio and PnL trackers.
 
+## Try it without signing up
+
+The public demo key works on every endpoint and on the websocket, with no account:
+
+```python
+from cabalspy import CabalSpy
+
+client = CabalSpy.demo()
+wallets = client.wallets.list(blockchain="solana", type="kol")
+print(client.last_demo["remaining_today"])
+```
+
+Or keyless, straight from a terminal:
+
+```bash
+curl "https://demo-api.cabalspy.xyz/v1/wallets?blockchain=solana&type=kol"
+```
+
+- 20 requests per IP per UTC day, shared between REST and WebSocket (each connection counts as 1)
+- Data is 15 minutes delayed, at most 5 rows per list, no pagination
+- WebSocket: 1 connection per IP, up to 3 subscriptions, closed after 30 minutes
+
+Every demo response carries a `demo` object (`notice`, `remaining_today`, `upgrade`), exposed as `client.last_demo` and `Envelope.demo`. A spent budget raises `DemoLimitError` with `.resets_in_seconds` and `.upgrade`. For real-time data, get a free test key (1,000 requests per month) at [apidashboard.cabalspy.xyz](https://apidashboard.cabalspy.xyz/), or pay per call with x402 via [`cabalspy-x402`](https://pypi.org/project/cabalspy-x402/).
+
 ## Quick start
 
 ```python
@@ -184,12 +208,13 @@ except RateLimitError as exc:
 | `InsufficientCreditsError` | 403 | `insufficient_credits` |
 | `NotFoundError` | 404 | `wallet_not_found`, `token_not_found` |
 | `RateLimitError` | 429 | `rate_limit_exceeded` |
+| `DemoLimitError` | 429 | `demo_limit_reached` (subclass of `RateLimitError`) |
 | `ServerError` | 5xx | `internal_error`, `service_unavailable` |
 | `APIConnectionError` | – | network failure, timeout |
 
 Every error carries `.code`, `.request_id` and `.docs`; `BadRequestError` also carries `.parameter` and `.allowed`.
 
-`429`, `5xx` and network errors are retried automatically with exponential backoff and jitter. A server-sent `Retry-After` wins over the SDK's own backoff.
+`429` (except `demo_limit_reached`), `5xx` and network errors are retried automatically with exponential backoff and jitter. A server-sent `Retry-After` wins over the SDK's own backoff.
 
 ```python
 client = CabalSpy(max_retries=3, timeout=15.0)

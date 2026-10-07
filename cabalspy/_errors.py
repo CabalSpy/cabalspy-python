@@ -74,6 +74,28 @@ class RateLimitError(CabalSpyError):
         self.retry_after = retry_after
 
 
+class DemoLimitError(RateLimitError):
+    """429 — demo_limit_reached. The public demo key's daily budget is spent.
+
+    Not retried: the budget only resets at the next UTC day. ``upgrade`` holds the
+    links to a free test key and to pay per call with x402.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        resets_in_seconds: int | None = None,
+        upgrade: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        kwargs.setdefault("retry_after", resets_in_seconds)
+        super().__init__(message, **kwargs)
+        #: Seconds until the demo budget resets, as reported by the server.
+        self.resets_in_seconds = resets_in_seconds
+        self.upgrade = upgrade or {}
+
+
 class ServerError(CabalSpyError):
     """5xx — internal_error or service_unavailable."""
 
@@ -112,6 +134,8 @@ def error_from_status(
     rate_limit: RateLimit,
     retry_after: float | None,
     fallback: str,
+    *,
+    upgrade: dict[str, Any] | None = None,
 ) -> CabalSpyError:
     """Maps an HTTP status and error body onto the right exception class."""
     body = body or {}
@@ -137,6 +161,15 @@ def error_from_status(
     if status == 404:
         return NotFoundError(message, **kwargs)
     if status == 429:
+        if body.get("code") == "demo_limit_reached":
+            resets = body.get("resets_in_seconds")
+            return DemoLimitError(
+                message,
+                retry_after=retry_after if retry_after is not None else resets,
+                resets_in_seconds=resets,
+                upgrade=upgrade,
+                **kwargs,
+            )
         return RateLimitError(message, retry_after=retry_after, **kwargs)
     if status >= 500:
         return ServerError(message, **kwargs)
@@ -145,4 +178,6 @@ def error_from_status(
 
 def is_retryable(exc: BaseException) -> bool:
     """True for failures where retrying with backoff is worthwhile."""
+    if isinstance(exc, DemoLimitError):
+        return False
     return isinstance(exc, (RateLimitError, ServerError, APIConnectionError))
