@@ -30,7 +30,11 @@ import random
 from typing import Any, Awaitable, Callable
 from urllib.parse import quote
 
-import websockets
+# Optional: the REST client must import without it. Only connect() needs it.
+try:
+    import websockets
+except ImportError:  # pip install "cabalspy[realtime]"
+    websockets = None  # type: ignore[assignment]
 
 from ._constants import CALL_CHAINS, CALL_TIERS, CHAINS, WALLET_TYPES_BY_CHAIN, wallet_type_is_valid
 from ._errors import APIConnectionError, BadRequestError, CabalSpyError
@@ -201,6 +205,11 @@ class CabalSpyRealtime:
 
     async def connect(self) -> None:
         """Connects and returns once the gateway has accepted the socket."""
+        if websockets is None:
+            raise CabalSpyError(
+                'The realtime client needs the websockets package: pip install "cabalspy[realtime]"',
+                code="missing_dependency",
+            )
         self._closed = False
         try:
             self._ws = await websockets.connect(self._url, open_timeout=20)

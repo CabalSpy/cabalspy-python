@@ -47,7 +47,7 @@ __all__ = ["CabalSpy", "AsyncCabalSpy", "Envelope", "DEMO_API_KEY"]
 
 DEFAULT_BASE_URL = "https://api.cabalspy.xyz/v1"
 DEFAULT_WS_URL = "wss://stream.cabalspy.xyz"
-SDK_VERSION = "0.4.0"
+SDK_VERSION = "0.4.1"
 
 #: Public demo key. 20 requests per IP per UTC day, data 15 minutes delayed and
 #: at most 5 rows per list. Use :meth:`CabalSpy.demo` rather than passing it by hand.
