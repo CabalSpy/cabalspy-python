@@ -48,6 +48,16 @@ ANALYTICS_MODES: tuple[AnalyticsMode, ...] = (
     "top_performers",
 )
 
+CallChain = Literal["solana", "bnb", "eth", "rh"]
+CallTier = Literal["gamble", "moderate", "good", "big", "whale"]
+CallStatsPeriod = Literal["1d", "7d", "30d", "90d"]
+
+#: Chains with curated calls. Base has none.
+CALL_CHAINS: tuple[CallChain, ...] = ("solana", "bnb", "eth", "rh")
+#: big and whale exist on solana only.
+CALL_TIERS: tuple[CallTier, ...] = ("gamble", "moderate", "good", "big", "whale")
+CALL_STATS_PERIODS: tuple[CallStatsPeriod, ...] = ("1d", "7d", "30d", "90d")
+
 BATCH_MAX_MINTS = 100
 BATCH_MAX_ADDRESSES = 100
 MAX_LIMIT = 200

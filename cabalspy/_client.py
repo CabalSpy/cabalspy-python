@@ -17,9 +17,15 @@ import httpx
 from ._constants import (
     BATCH_MAX_ADDRESSES,
     BATCH_MAX_MINTS,
+    CALL_CHAINS,
+    CALL_STATS_PERIODS,
+    CALL_TIERS,
     CHAINS,
     WALLET_TYPES_BY_CHAIN,
     AnalyticsMode,
+    CallChain,
+    CallStatsPeriod,
+    CallTier,
     Chain,
     Period,
     SignalMode,
@@ -41,7 +47,7 @@ __all__ = ["CabalSpy", "AsyncCabalSpy", "Envelope", "DEMO_API_KEY"]
 
 DEFAULT_BASE_URL = "https://api.cabalspy.xyz/v1"
 DEFAULT_WS_URL = "wss://stream.cabalspy.xyz"
-SDK_VERSION = "0.3.0"
+SDK_VERSION = "0.4.0"
 
 #: Public demo key. 20 requests per IP per UTC day, data 15 minutes delayed and
 #: at most 5 rows per list. Use :meth:`CabalSpy.demo` rather than passing it by hand.
@@ -526,6 +532,82 @@ class BundleResource(_Resource):
         return self._c._get("/bundle", {"blockchain": "solana", "mint": mint})
 
 
+def _choices(value: str | Sequence[str] | None, allowed: Sequence[str], parameter: str) -> str | None:
+    """One value, a comma separated string or a list, each from allowed. Joined for the query."""
+    if value is None:
+        return None
+    items = value.split(",") if isinstance(value, str) else list(value)
+    items = [v.strip() for v in items if v and v.strip()]
+    for v in items:
+        if v not in allowed:
+            raise BadRequestError(
+                f"Unknown {parameter} {v!r}",
+                code="invalid_parameter",
+                parameter=parameter,
+                allowed=list(allowed),
+            )
+    return ",".join(items) or None
+
+
+class CallsResource(_Resource):
+    """The curated CabalSpy calls, the same ones posted in Discord.
+
+    For calls as they happen, subscribe to ``stream="call"`` on the realtime client.
+    To walk every page use ``client.pages("/calls", {...})``.
+    """
+
+    def list(
+        self,
+        *,
+        blockchain: CallChain | Sequence[CallChain] | None = None,
+        tier: CallTier | Sequence[CallTier] | None = None,
+        since: str | int | None = None,
+        until: str | int | None = None,
+        limit: int | None = None,
+        cursor: str | None = None,
+    ) -> Any:
+        """GET /v1/calls — newest first, each with its 24 h performance.
+
+        ``performance.status`` is "pending" for about two days, until the call has
+        been measured. since and until take ISO 8601 or Unix seconds/milliseconds.
+        """
+        return self._c._get(
+            "/calls",
+            {
+                "blockchain": _choices(blockchain, CALL_CHAINS, "blockchain"),
+                "tier": _choices(tier, CALL_TIERS, "tier"),
+                "since": since,
+                "until": until,
+                "limit": limit,
+                "cursor": cursor,
+            },
+        )
+
+    def stats(
+        self,
+        *,
+        period: CallStatsPeriod = "7d",
+        blockchain: CallChain | Sequence[CallChain] | None = None,
+        tier: CallTier | Sequence[CallTier] | None = None,
+    ) -> Any:
+        """GET /v1/calls/stats — hit rates (2x, 5x, 10x within 24 h) per chain and tier."""
+        if period not in CALL_STATS_PERIODS:
+            raise BadRequestError(
+                f"Unknown period {period!r}",
+                code="invalid_parameter",
+                parameter="period",
+                allowed=list(CALL_STATS_PERIODS),
+            )
+        return self._c._get(
+            "/calls/stats",
+            {
+                "period": period,
+                "blockchain": _choices(blockchain, CALL_CHAINS, "blockchain"),
+                "tier": _choices(tier, CALL_TIERS, "tier"),
+            },
+        )
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  CLIENTS
 # ═══════════════════════════════════════════════════════════════════════════
@@ -572,6 +654,7 @@ class _BaseClient:
         self.signals = SignalsResource(self)
         self.analytics = AnalyticsResource(self)
         self.bundle = BundleResource(self)
+        self.calls = CallsResource(self)
 
     @property
     def is_demo(self) -> bool:

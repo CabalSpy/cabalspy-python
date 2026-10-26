@@ -26,6 +26,9 @@ from ._constants import (
     ANALYTICS_MODES,
     BATCH_MAX_ADDRESSES,
     BATCH_MAX_MINTS,
+    CALL_CHAINS,
+    CALL_STATS_PERIODS,
+    CALL_TIERS,
     CHAINS,
     CURRENCY_BY_CHAIN,
     MARKETCAP_CHAINS_REST,
@@ -36,6 +39,9 @@ from ._constants import (
     VOLUME_MAX_SECONDS,
     WALLET_TYPES_BY_CHAIN,
     AnalyticsMode,
+    CallChain,
+    CallStatsPeriod,
+    CallTier,
     Chain,
     Currency,
     Period,
@@ -96,7 +102,7 @@ from ._types import (
     WinRateDistribution,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "__version__",
@@ -127,6 +133,9 @@ __all__ = [
     "PERIODS",
     "SIGNAL_MODES",
     "ANALYTICS_MODES",
+    "CALL_CHAINS",
+    "CALL_TIERS",
+    "CALL_STATS_PERIODS",
     "BATCH_MAX_MINTS",
     "BATCH_MAX_ADDRESSES",
     "MAX_LIMIT",
@@ -144,6 +153,9 @@ __all__ = [
     "Currency",
     "SignalMode",
     "AnalyticsMode",
+    "CallChain",
+    "CallTier",
+    "CallStatsPeriod",
     # response types
     "ResponseMeta",
     "Pagination",

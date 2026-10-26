@@ -32,7 +32,7 @@ from urllib.parse import quote
 
 import websockets
 
-from ._constants import CHAINS, WALLET_TYPES_BY_CHAIN, wallet_type_is_valid
+from ._constants import CALL_CHAINS, CALL_TIERS, CHAINS, WALLET_TYPES_BY_CHAIN, wallet_type_is_valid
 from ._errors import APIConnectionError, BadRequestError, CabalSpyError
 
 Handler = Callable[[dict[str, Any]], Any]
@@ -45,6 +45,7 @@ GATEWAY_EVENTS = (
     "holder_update",
     "balance_update",
     "init",
+    "call",
 )
 
 
@@ -77,6 +78,25 @@ def _validate_subscription(sub: dict[str, Any]) -> None:
                 "mc_interval must be between 1 and 30",
                 code="invalid_parameter",
                 parameter="mc_interval",
+            )
+        return
+
+    if stream == "call":
+        chain = sub.get("blockchain", "*")
+        if chain != "*" and chain not in CALL_CHAINS:
+            raise BadRequestError(
+                f"Unknown blockchain {chain!r}",
+                code="invalid_parameter",
+                parameter="blockchain",
+                allowed=[*CALL_CHAINS, "*"],
+            )
+        bad = [t for t in sub.get("tiers") or [] if t not in CALL_TIERS]
+        if bad:
+            raise BadRequestError(
+                f"Unknown tier {bad[0]!r}",
+                code="invalid_parameter",
+                parameter="tiers",
+                allowed=list(CALL_TIERS),
             )
         return
 
@@ -154,7 +174,7 @@ class CabalSpyRealtime:
         """Registers a handler. Usable directly or as a decorator.
 
         Gateway events: position_update, wallet_count, signal, kol_bundle,
-        holder_update, balance_update, init.
+        holder_update, balance_update, init, call.
         SDK events: open, close, error, ack, message.
         """
         def register(fn: Handler) -> Handler:
@@ -280,10 +300,14 @@ class CabalSpyRealtime:
           bundle   token, mode="events"|"full", mc_interval=1..30   (solana only)
           holder   blockchain, token, wallet_types=[...]
           balance  blockchain, wallet, wallet_types=[...]
+          call     blockchain (solana, bnb, eth, rh or "*", default "*"),
+                   tiers=["gamble", "moderate", "good", "big", "whale"]
         """
         _validate_subscription(sub)
         if sub.get("stream") == "bundle":
             sub = {**sub, "blockchain": "solana"}
+        elif sub.get("stream") == "call":
+            sub = {**sub, "blockchain": sub.get("blockchain", "*")}
         self._subs[self._key(sub)] = sub
         await self._send({"op": "subscribe", **sub})
 

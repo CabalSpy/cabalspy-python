@@ -2,7 +2,7 @@
 
 Official Python client for the **CabalSpy API**: a realtime multichain data layer for labeled wallets, covering **Solana, Base, BNB Chain, Ethereum and Robinhood Chain**.
 
-Track what Key Opinion Leaders, smart money wallets and whales are actually buying — with PnL, holder data, cluster signals and bundle detection. Full REST coverage, six WebSocket streams, sync and async.
+Track what Key Opinion Leaders, smart money wallets and whales are actually buying — with PnL, holder data, cluster signals, bundle detection and our curated calls. Full REST coverage, seven WebSocket streams, sync and async.
 
 ```bash
 pip install cabalspy
@@ -60,6 +60,11 @@ signals = client.signals.list(
 )
 for signal in signals["signals"]:
     print(signal["token"]["token_name"], signal["window"]["wallet_count"])
+
+# Curated calls (the ones posted in the CabalSpy Discord) and how they performed
+calls = client.calls.list(blockchain="solana", tier=["good", "moderate"])
+stats = client.calls.stats(period="30d")
+print(stats["totals"]["hit_rate"]["2x"], "% of calls reached 2x within 24 h")
 ```
 
 ## Async
@@ -100,6 +105,10 @@ async def main():
         def on_bundle(msg):
             print("bundle", msg["data"]["bundle_id"])
 
+        @rt.on("call")
+        def on_call(msg):
+            print("call", msg["data"]["tier_label"], msg["data"]["token"]["symbol"])
+
         await rt.connect()
         await rt.subscribe(stream="tx", blockchain="solana", type="kol", token="*")
         await rt.subscribe(stream="bundle", token="MINT_ADDRESS", mode="full", mc_interval=5)
@@ -108,6 +117,7 @@ async def main():
             blockchain="solana",
             kol={"min_buy": 2, "entry_at": [3, 5, 10], "exit_at": [2, 0]},
         )
+        await rt.subscribe(stream="call", blockchain="solana", tiers=["good"])  # omit blockchain for every chain
         await rt.run_forever()
 
 asyncio.run(main())
@@ -178,6 +188,8 @@ Ethereum mainnet carries `kol` wallets only; smart money signals are unavailable
 **Analytics** — `get` (modes `volume_trend`, `most_traded`, `win_rate`, `top_performers`)
 
 **Bundles** — `get` (Solana only)
+
+**Calls** — `list` (chains `solana`, `bnb`, `eth`, `rh`; tiers `gamble`, `moderate`, `good`, `big`, `whale`), `stats` (periods `1d`, `7d`, `30d`, `90d`). Walk every page with `client.pages("/calls", {...})`. `performance.status` is `"pending"` for about two days, until the call has been measured over 24 h.
 
 **System** — `health`, `meta`
 
