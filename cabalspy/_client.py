@@ -47,7 +47,7 @@ __all__ = ["CabalSpy", "AsyncCabalSpy", "Envelope", "DEMO_API_KEY"]
 
 DEFAULT_BASE_URL = "https://api.cabalspy.xyz/v1"
 DEFAULT_WS_URL = "wss://stream.cabalspy.xyz"
-SDK_VERSION = "0.4.1"
+SDK_VERSION = "0.5.0"
 
 #: Public demo key. 20 requests per IP per UTC day, data 15 minutes delayed and
 #: at most 5 rows per list. Use :meth:`CabalSpy.demo` rather than passing it by hand.
@@ -288,21 +288,30 @@ class TokensResource(_Resource):
         mint: str,
         type: WalletType | None = None,
         limit: int | None = None,
+        cursor: str | None = None,
+        since: str | int | None = None,
     ) -> Any:
-        """GET /v1/tokens/transactions — trades by tracked wallets in this token."""
+        """GET /v1/tokens/transactions — trades by tracked wallets in this token, newest first.
+
+        Pass ``since`` (Unix seconds, milliseconds or ISO 8601; usually the
+        ``created_at`` of the newest trade you already have) to poll for new trades
+        only. A poll that finds nothing new costs 0 credits. The bound is inclusive,
+        so deduplicate by ``tx_signature``. For pages, pass ``cursor`` from
+        ``pagination.next_cursor`` (``get_raw`` / ``pages`` return the envelope).
+        """
         _validate_chain_type(blockchain, type)
         return self._c._get(
             "/tokens/transactions",
-            {"blockchain": blockchain, "mint": mint, "type": type, "limit": limit},
+            {"blockchain": blockchain, "mint": mint, "type": type, "limit": limit,
+             "cursor": cursor, "since": since},
         )
 
     def stats(self, *, blockchain: Chain, mint: str, type: WalletType | None = None) -> Any:
         """GET /v1/tokens/stats — aggregated token statistics.
 
-        Omitting ``type`` merges every wallet type of that chain. Note that this
-        endpoint does not pass the native price into its market cap builder, so
-        market_cap_usd, price_usd and sol_price_usd come back None even on Solana.
-        tokens/holders returns them populated.
+        Omitting ``type`` merges every wallet type of that chain. Market cap and
+        price are filled on every chain; ``market_cap_source`` says whether the
+        value is live or taken from the last tracked trade.
         """
         _validate_chain_type(blockchain, type)
         return self._c._get(
@@ -316,12 +325,17 @@ class TokensResource(_Resource):
         mint: str,
         type: WalletType | None = None,
         limit: int | None = None,
+        cursor: str | None = None,
     ) -> Any:
-        """GET /v1/tokens/holders — tracked holders, sorted by balance."""
+        """GET /v1/tokens/holders — tracked holders, sorted by balance.
+
+        For pages, pass ``cursor`` from ``pagination.next_cursor`` with the same limit.
+        """
         _validate_chain_type(blockchain, type)
         return self._c._get(
             "/tokens/holders",
-            {"blockchain": blockchain, "mint": mint, "type": type, "limit": limit},
+            {"blockchain": blockchain, "mint": mint, "type": type, "limit": limit,
+             "cursor": cursor},
         )
 
     def batch(

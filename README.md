@@ -179,7 +179,7 @@ Ethereum mainnet carries `kol` wallets only; smart money signals are unavailable
 
 **Wallets** — `list`, `history`, `lookup`, `leaderboard`, `tracker`, `holdings`, `pnl_calendar`, `connections`, `batch`
 
-**Tokens** — `transactions`, `stats`, `holders`, `batch`
+**Tokens** — `transactions`, `stats`, `holders`, `batch` (`transactions` takes `since` to poll for new trades only, free when nothing is new; `transactions` and `holders` take `cursor`)
 
 **Transactions** — `latest`, `timerange` (max 60 min), `count`, `volume` (max 24 h)
 
